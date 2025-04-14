@@ -11,7 +11,10 @@ crate-type = ["cdylib", "lib"]
 binary_parser = { git = "https://github.com/BroGamer4256/binary_parser" }
 libflate = "2.0"
 thiserror = "1.0"
-pyo3 = { version = "0.20", features = ["extension-module"], optional = true }
+pyo3 = { version = "0.21", features = [
+    "extension-module",
+    "abi3-py37",
+], optional = true }
 
 [features]
 default = ["python"]
