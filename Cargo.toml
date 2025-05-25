@@ -8,7 +8,7 @@ name = "farc"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-binary_parser = { git = "https://github.com/BroGamer4256/binary_parser" }
+binary_parser = { git = "https://github.com/vixen256/binary_parser" }
 libflate = "2.0"
 thiserror = "1.0"
 pyo3 = { version = "0.21", features = [
