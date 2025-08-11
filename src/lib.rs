@@ -11,8 +11,8 @@ use thiserror::Error;
 #[cfg(feature = "python")]
 pub mod py;
 
-pub struct Farc {
-	pub entries: BTreeMap<String, BinaryParser>,
+pub struct Farc<'a> {
+	pub entries: BTreeMap<String, BinaryParser<'a>>,
 }
 
 #[derive(Error, Debug)]
@@ -29,13 +29,13 @@ pub enum FarcError {
 
 pub type Result<T> = std::result::Result<T, FarcError>;
 
-impl Farc {
+impl<'a> Farc<'a> {
 	pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
 		let mut reader = BinaryParser::from_file(path)?;
 		Self::from_parser(&mut reader)
 	}
 
-	pub fn from_parser(reader: &mut BinaryParser) -> Result<Self> {
+	pub fn from_parser(reader: &mut BinaryParser<'a>) -> Result<Self> {
 		reader.set_big_endian(true);
 		let signature = reader.read_string(4)?;
 		let header_size = reader.read_u32()? + 8;
@@ -103,7 +103,7 @@ impl Farc {
 		Ok(())
 	}
 
-	pub fn write_parser(&self, compress: bool) -> Result<BinaryParser> {
+	pub fn write_parser(&self, compress: bool) -> Result<BinaryParser<'_>> {
 		if self
 			.entries
 			.iter()
@@ -156,7 +156,7 @@ impl Farc {
 				writer.write_u32(len)?;
 			};
 		}
-		writer.finish_writes()?;
+		let writer = writer.finish_writes()?;
 
 		Ok(writer)
 	}
