@@ -1,0 +1,15 @@
+[package]
+name = "farc"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+binary_parser = { git = "https://github.com/vixen256/binary_parser" }
+libflate = "2.1"
+
+[dev-dependencies]
+clap = { version = "4.5", features = ["derive"] }
+
+[[example]]
+name = "farc_pack"
+path = "examples/farc_pack.rs"
