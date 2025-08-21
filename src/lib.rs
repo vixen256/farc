@@ -1,5 +1,6 @@
 use binary_parser::*;
-use libflate::gzip;
+use flate2::read::GzDecoder;
+use flate2::{Compression, GzBuilder};
 use std::collections::*;
 use std::fs::File;
 use std::io::{Cursor, Read, SeekFrom, Write};
@@ -72,14 +73,14 @@ impl<'a, 'b> Farc<'a> {
 					}
 
 					let mut cursor = Cursor::new(data);
-					let mut decoder = gzip::Decoder::new(&mut cursor)?;
+					let mut decoder = GzDecoder::new(&mut cursor);
 					let mut data = Vec::new();
 					decoder.read_to_end(&mut data)?;
 					entries.insert(
 						name,
 						FarcEntry {
 							data: BinaryParser::from_buf(data),
-							modified_time: Some(decoder.header().modification_time()),
+							modified_time: Some(decoder.header().unwrap().mtime()),
 						},
 					);
 				}
@@ -145,20 +146,25 @@ impl<'a, 'b> Farc<'a> {
 		for (name, (data, modified_time)) in entries {
 			if compress {
 				let length = data.len();
+				writer.write_null_string(&name)?;
 
-				let header = gzip::HeaderBuilder::new()
-					.modification_time(modified_time.unwrap_or(0))
-					.filename(std::ffi::CString::new(name.clone()).unwrap())
-					.os(gzip::Os::Unix)
-					.finish();
-				let options = gzip::EncodeOptions::new().header(header);
-				let mut encoder = gzip::Encoder::with_options(Vec::new(), options)?;
+				let mut encoder = GzBuilder::new()
+					.filename(name)
+					.operating_system(0xFF)
+					.mtime(
+						modified_time.unwrap_or(
+							std::time::SystemTime::now()
+								.duration_since(std::time::SystemTime::UNIX_EPOCH)
+								.unwrap()
+								.as_secs() as u32,
+						),
+					)
+					.write(Vec::new(), Compression::best());
 
 				encoder.write_all(&data)?;
-				let data = encoder.finish().into_result()?;
+				let data = encoder.finish()?;
 				let compressed_length = data.len();
 
-				writer.write_null_string(&name)?;
 				writer.write_pointer(move |writer| {
 					writer.write_buf(&data)?;
 					writer.align_write_value(self.alignment as u64, 0x78)?;

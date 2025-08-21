@@ -45,7 +45,16 @@ fn main() {
 				continue;
 			}
 			let data = std::fs::read(&path).unwrap();
-			farc.insert(path.file_name().unwrap().to_str().unwrap(), &data, None);
+			let time = std::fs::metadata(&path).unwrap().modified().unwrap();
+			let time = time
+				.duration_since(std::time::SystemTime::UNIX_EPOCH)
+				.unwrap()
+				.as_secs() as u32;
+			farc.insert(
+				path.file_name().unwrap().to_str().unwrap(),
+				&data,
+				Some(time),
+			);
 		}
 		let file = path.with_extension("farc");
 		farc.write_file(&file, args.compress).unwrap();
